@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IndoTrades - Pantau Saham Pejabat & Insider BEI</title>
+  <script src="https://tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased">
+
+  <!-- Navbar -->
+  <nav class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-10 px-4 py-3 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-emerald-400 font-black text-xl">▲</span>
+      <span class="text-lg font-bold tracking-tight">Indo<span class="text-emerald-400">Trades</span></span>
+    </div>
+    <span class="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full">Versi Beta</span>
+  </nav>
+
+  <!-- Hero -->
+  <header class="px-4 py-8 border-b border-slate-800 max-w-4xl mx-auto">
+    <span class="text-[11px] font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-400/10 px-2.5 py-1 rounded-full">
+      Transparansi Pasar Modal RI
+    </span>
+    <h1 class="text-2xl sm:text-4xl font-extrabold mt-3 leading-snug">
+      Pantau Transaksi Saham Pejabat & Insider BEI.
+    </h1>
+    <p class="text-slate-400 mt-2 text-sm">
+      Melacak keterbukaan informasi kepemilikan saham (&gt;5%) dan laporan LHKPN untuk riset investasi.
+    </p>
+  </header>
+
+  <!-- Main Content -->
+  <main class="px-4 py-6 max-w-4xl mx-auto space-y-8">
+
+    <!-- Emiten Populer -->
+    <section>
+      <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3">Emiten Paling Aktif</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3" id="issuers-grid"></div>
+    </section>
+
+    <!-- Filter & Search -->
+    <section>
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400">Transaksi Terbaru</h2>
+        <div class="flex gap-2">
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Cari nama / saham..."
+            class="w-full sm:w-48 bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-emerald-500"
+          />
+          <select id="filterType" class="bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200">
+            <option value="SEMUA">Semua</option>
+            <option value="BELI">Beli</option>
+            <option value="JUAL">Jual</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- List Transaksi (Mobile Friendly Cards + Table) -->
+      <div id="trades-list" class="space-y-3"></div>
+    </section>
+
+  </main>
+
+  <footer class="border-t border-slate-800 mt-12 py-6 px-4 text-center text-xs text-slate-500">
+    Data simulasi untuk tampilan awal. Hubungkan dengan Google Sheets / Supabase untuk data live.
+  </footer>
+
+  <script>
+    const ISSUERS = [
+      { name: "Adaro Energy", ticker: "ADRO:IJ", trades: 42, change: "+12.4%" },
+      { name: "Saratoga", ticker: "SRTG:IJ", trades: 38, change: "+8.1%" },
+      { name: "Bank BCA", ticker: "BBCA:IJ", trades: 95, change: "+15.2%" },
+      { name: "TBS Energi", ticker: "TOBA:IJ", trades: 29, change: "-3.4%" },
+    ];
+
+    const TRADES = [
+      { politician: "Sandiaga Uno", role: "Menteri / Pengusaha", issuer: "Saratoga Investama", ticker: "SRTG:IJ", type: "BELI", amount: "Rp 5M – 15M", date: "2 hari lalu" },
+      { politician: "Erick Thohir", role: "Menteri BUMN", issuer: "Mahaka Radio", ticker: "MARI:IJ", type: "JUAL", amount: "Rp 1M – 5M", date: "4 hari lalu" },
+      { politician: "Luhut B. Pandjaitan", role: "Menko Marves", issuer: "TBS Energi Utama", ticker: "TOBA:IJ", type: "BELI", amount: "Rp 15M – 50M", date: "1 minggu lalu" },
+      { politician: "Garibaldi Thohir", role: "Komisaris / Afiliasi", issuer: "Adaro Energy", ticker: "ADRO:IJ", type: "BELI", amount: "Rp 50M+", date: "2 minggu lalu" },
+    ];
+
+    // Render Emiten
+    const issuersGrid = document.getElementById("issuers-grid");
+    ISSUERS.forEach(item => {
+      const isPos = item.change.startsWith("+");
+      issuersGrid.innerHTML += `
+        <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl">
+          <div class="flex justify-between items-start">
+            <span class="font-bold text-sm text-white">${item.ticker.split(":")[0]}</span>
+            <span class="text-[11px] font-semibold px-1.5 py-0.5 rounded ${isPos ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"}">${item.change}</span>
+          </div>
+          <p class="text-xs text-slate-400 mt-1 truncate">${item.name}</p>
+          <p class="text-[11px] text-slate-500 mt-2">${item.trades} laporan</p>
+        </div>
+      `;
+    });
+
+    // Render Transaksi
+    const tradesList = document.getElementById("trades-list");
+    const searchInput = document.getElementById("searchInput");
+    const filterType = document.getElementById("filterType");
+
+    function renderTrades() {
+      const q = searchInput.value.toLowerCase();
+      const type = filterType.value;
+
+      const filtered = TRADES.filter(t => {
+        const matchText = t.politician.toLowerCase().includes(q) || t.issuer.toLowerCase().includes(q) || t.ticker.toLowerCase().includes(q);
+        const matchType = type === "SEMUA" || t.type === type;
+        return matchText && matchType;
+      });
+
+      tradesList.innerHTML = filtered.map(t => `
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between gap-3">
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-sm text-white">${t.politician}</span>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${t.type === "BELI" ? "bg-emerald-500/15 text-emerald-400" : "bg-rose-500/15 text-rose-400"}">
+                ${t.type}
+              </span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">${t.role}</p>
+            <p class="text-xs text-emerald-400 font-mono mt-1.5">${t.issuer} (${t.ticker})</p>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-xs font-mono font-semibold text-slate-200">${t.amount}</p>
+            <p class="text-[11px] text-slate-500 mt-1">${t.date}</p>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    searchInput.addEventListener("input", renderTrades);
+    filterType.addEventListener("change", renderTrades);
+    renderTrades();
+  </script>
+</body>
+</html>
